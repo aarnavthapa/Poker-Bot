@@ -3,22 +3,24 @@ Fullhouse Hackathon — No-Limit Texas Hold'em Game Engine v2.0
 6-max (up to 9), using eval7 (same library as MIT Pokerbots).
 
 Fixes in v2.0:
-  - Correct side-pot computation (multiple all-in levels)
-  - Heads-up rules: dealer = SB, SB acts first preflop, BB first postflop
-  - BB option: BB is included in needs_to_act preflop
-  - Short all-in: does NOT reopen action for players who already acted
-  - Accurate blind posting: logs real contributed amounts
-  - Deterministic/seeded deck for reproducible matches
-  - Explicit player states: active / folded / all_in / busted
-  - Chip invariant check after every hand resolution
-  - Rich event log for full replay (street_start, blind, action, showdown)
-  - Hand strength labels at showdown
+- Correct side-pot computation (multiple all-in levels)
+- Heads-up rules: dealer = SB, SB acts first preflop, BB first postflop
+- BB option: BB is included in needs_to_act preflop
+- Short all-in: does NOT reopen action for players who already acted
+- Accurate blind posting: logs real contributed amounts
+- Deterministic/seeded deck for reproducible matches
+- Explicit player states: active / folded / all_in / busted
+- Chip invariant check after every hand resolution
+- Rich event log for full replay (street_start, blind, action, showdown)
+- Hand strength labels at showdown
 """
 
-import eval7
+from treys import Card, Evaluator
 import random
 from dataclasses import dataclass, field
 from typing import Optional
+
+evaluator = Evaluator()
 
 # ---------------------------------------------------------------------------
 # Config
@@ -110,7 +112,7 @@ class PokerEngine:
         self.seed        = seed
 
         self.pot             = 0
-        self.community_cards = []          # list of eval7.Card
+        self.community_cards = []          # list of treys cards
         self.street          = "preflop"
         self.action_log      = []          # flat dicts (backwards-compat for bots)
         self.events          = []          # rich event log for replay
@@ -121,7 +123,7 @@ class PokerEngine:
         self._last_aggression_size = BIG_BLIND
 
         self._needs_to_act    = set()
-        self._deck_cards      = []         # list[eval7.Card] after shuffle
+        self._deck_cards      = []         # list[trey cards] after shuffle
         self._deck_idx        = 0
         self._starting_stacks = {}         # snapshot before hand starts
 
@@ -291,7 +293,7 @@ class PokerEngine:
 
         self._emit("street_start", {
             "street":          self.street,
-            "community_cards": [str(c) for c in self.community_cards],
+            "community_cards": [Card.int_to_str(c) for c in self.community_cards],
         })
 
         first = self._first_postflop_actor()
@@ -358,7 +360,7 @@ class PokerEngine:
         """Build and (optionally deterministic) shuffle a full 52-card deck."""
         ranks = "23456789TJQKA"
         suits = "shdc"
-        cards = [eval7.Card(r + s) for r in ranks for s in suits]
+        cards = [Card.new(r + s) for r in ranks for s in suits]
         if self.seed is not None:
             rng = random.Random(self.seed)
             rng.shuffle(cards)
@@ -421,18 +423,22 @@ class PokerEngine:
         if len(contenders) == 1:
             return self._award_uncontested(contenders[0])
 
-        scored = [
-            (eval7.evaluate(p.hole_cards + self.community_cards), p)
-            for p in contenders
-        ]
+        scored = []
+
+        for p in contenders:
+            score = evaluator.evaluate(
+                self.community_cards,
+                p.hole_cards
+            )
+            scored.append((score, p))
 
         # Hand strength labels
         hand_strengths = {}
-        for score, p in scored:
-            try:
-                hand_strengths[p.bot_id] = str(eval7.handtype(score))
-            except Exception:
-                hand_strengths[p.bot_id] = "unknown"
+        rank_class = evaluator.get_rank_class(score)
+
+        hand_strengths[p.bot_id] = evaluator.class_to_string(
+            rank_class
+        )
 
         # Side-pot resolution
         side_pots   = self._compute_side_pots()
@@ -441,7 +447,7 @@ class PokerEngine:
         for pot_info in side_pots:
             eligible_ids    = {p.bot_id for p in pot_info["eligible"]}
             eligible_scored = [(s, p) for s, p in scored if p.bot_id in eligible_ids]
-            best            = max(s for s, _ in eligible_scored)
+            best            = min(s for s, _ in eligible_scored)
             pot_winners     = [p for s, p in eligible_scored if s == best]
 
             split     = pot_info["amount"] // len(pot_winners)
@@ -456,10 +462,13 @@ class PokerEngine:
                     "pot_type": "main" if pot_info is side_pots[0] else "side",
                 })
 
-        revealed = {p.bot_id: [str(c) for c in p.hole_cards] for _, p in scored}
+        revealed = {
+    p.bot_id: [Card.int_to_str(c) for c in p.hole_cards]
+    for _, p in scored
+}
 
         self._emit("showdown", {
-            "community_cards": [str(c) for c in self.community_cards],
+            "community_cards": [Card.int_to_str(c) for c in self.community_cards],
             "revealed":        revealed,
             "hand_strengths":  hand_strengths,
             "winners":         winners_log,
@@ -558,15 +567,15 @@ class PokerEngine:
         return {
             "type":                  "action_request",
             "hand_id":               self.hand_id,
-            "street":                self.street,
+            "street":                   self.street,
             "seat_to_act":           seat,
             "pot":                   self.pot,
-            "community_cards":       [str(c) for c in self.community_cards],
+            "community_cards":       [Card.int_to_str(c) for c in self.community_cards],
             "current_bet":           self.current_bet,
             "min_raise_to":          self.current_bet + self.min_raise,
             "amount_owed":           owed,
             "can_check":             owed == 0,
-            "your_cards":            [str(c) for c in p.hole_cards],
+            "your_cards":            [Card.int_to_str(c) for c in p.hole_cards],
             "your_stack":            p.stack,
             "your_bet_this_street":  p.bet_this_street,
             "players":               [pl.to_public_dict() for pl in self.players],
@@ -585,7 +594,7 @@ class PokerEngine:
             "hand_id":         self.hand_id,
             "street":          self.street,
             "pot":             self.pot,
-            "community_cards": [str(c) for c in self.community_cards],
+            "community_cards": [Card.int_to_str(c) for c in self.community_cards],
             "winners":         winners,
             "showdown":        showdown,
             "revealed_cards":  revealed or {},
