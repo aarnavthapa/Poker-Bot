@@ -173,8 +173,8 @@ def monte_carlo_equity(
     How treys evaluation works here
     ────────────────────────────────
     treys.Evaluator.evaluate(board, hand) needs:
-      • board : list of 3–5 card ints  (we always complete to 5)
-      • hand  : list of exactly 2 card ints
+    • board : list of 3–5 card ints  (we always complete to 5)
+    • hand  : list of exactly 2 card ints
 
     Both arguments use the integer format from Card.new().
     Lower integer score = stronger hand.  Same convention as eval7.
