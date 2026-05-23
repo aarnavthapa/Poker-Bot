@@ -50,7 +50,7 @@ def decide(state):
 
 
     min_raise = state.get("min_raise_to", 0)
-    stack = state[:"your_stack"]
+    stack = state["your_stack"]
 
     if min_raise > 0 and min_raise <= stack:
         # Raise to 2X the value
@@ -60,4 +60,5 @@ def decide(state):
     if stack > 0:
         return {"action": "all_in"}
     
-    return {"action", "call"}
+    return {"action": "call"}
+    

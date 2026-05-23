@@ -51,13 +51,13 @@ def decide(state):
     
     # The Mathematician will always check for free
     if owed == 0 or state.get("can_check"):
-        return {"action", "check"}
+        return {"action": "check"}
     
     # Pot odds calculation: owed / (pot + owed) 
     total = pot + owed
     pot_odds_fraction = owed / total if total > 0 else 1
 
     if pot_odds_fraction <= 0.25:
-        return {"action", "call"}
+        return {"action": "call"}
 
     return {"action": "fold"}
