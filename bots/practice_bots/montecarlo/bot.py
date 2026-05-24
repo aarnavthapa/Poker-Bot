@@ -1,25 +1,42 @@
 """
-Monte Carlo Bot — treys edition
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Monte Carlo Bot 
 
-Uses the `treys` library instead of eval7.
-Same Monte Carlo logic — only the hand evaluation layer is different.
+Basic Idea for this - 
+decide(state)
+│
+├── if preflop
+│     └── use a hand ranking table
+│           (no simulation needed — too early, no board)
+│
+└── if flop/turn/river
+    ├── simulate_equity(my_cards, board, opponents)
+    │     └── [loop 500 times]
+    │           deal random opponent cards
+    │           fill the board randomly
+    │           evaluate who wins
+    │           count wins / total = equity
+    │
+    ├── calculate pot_odds(amount_owed, pot)
+    │
+    └── decide_action(equity, pot_odds)
+        ├── equity >= 0.70  → raise
+        ├── equity >= pot_odds + 0.05 → call
+        └── else → fold
 
-Install:
-    pip install treys
+Uses the `treys` library instead of eval7. -- The engine has been changed accordingly
 
-Key treys differences from eval7
-──────────────────────────────────
+
+Key treys differences from eval7:
+
 eval7:   eval7.Card("As")                → card object
 treys:   Card.new("As")                  → card integer
 
-eval7:   eval7.evaluate(list_of_7_cards) → score (lower = better)
-treys:   Evaluator().evaluate(board, hole) → score (lower = better)
+eval7:   eval7.evaluate(list_of_7_cards) → score (higher = better)         -- Main difference 
+treys:   Evaluator().evaluate(board, hole) → score (lower = better)       -- Main difference
         board = 3–5 card ints
         hole  = exactly 2 card ints
 
-Both use the same scoring convention: LOWER integer = STRONGER hand.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Different scoring conventions between the two.
 """
 
 import random
@@ -33,7 +50,7 @@ from treys import Card, Evaluator
 EVALUATOR = Evaluator()
 
 # Pre-build the full 52-card deck as treys card integers
-# treys uses bit-field integers internally — Card.new() converts a string once
+
 FULL_DECK = [Card.new(r + s) for r in "23456789TJQKA" for s in "shdc"]
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -236,7 +253,7 @@ def monte_carlo_equity(
         return wins / total if total > 0 else 0.5
 
     except Exception:
-        return 0.5   # safe fallback — never crash the bot
+        return 0.5   # safe fallback — never crash the bot because crash means we fold in the game
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BETTING HELPERS
