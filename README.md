@@ -9,12 +9,13 @@ This repository focuses on improving intelligent poker agents through self-play,
 ## Project Overview
 
 The FullHouse engine provides the underlying poker infrastructure:
-
+(I have changed the engine to use treys instead of eval7 for card evaluation)
 - game rules
 - state transitions
 - hand evaluation
 - tournament environment
 - sandbox framework
+
 
 The work in this repository focuses on:
 
@@ -33,30 +34,30 @@ The primary work in this repository includes:
 
 ### Practice Bots
 
-Simple agents used for benchmarking and experimentation:
+Simple agents used for benchmarking and experimentation:(Completed)
 
-- RandomBot
-- TightBot
-- AggressiveBot
-- PassiveBot
+- TemplateBot
+- SharkBot
+- AggressorBot
+- MathematicianBot
 - MonteCarloBot
 
 ---
 
 ### Experimental Bots
 
-Advanced strategy exploration:
+Advanced strategy exploration:(Pending Completion)
 
-- CFRBot
-- MCCFRBot
-- OpponentModelBot
+- CFRBot - (Counterfactual Regret Minimization)
+- MCCFRBot - (Monte-Carlo Counterfactual Regret Minimization)
+- OpponentModelBot 
 - ReinforcementLearningBot
 
 ---
 
 ### Final Competitive Agent
 
-FinalBot combines:
+FinalBot combines:(Pending Completion)
 
 - Monte Carlo equity estimation
 - opponent profiling
@@ -72,7 +73,8 @@ FinalBot combines:
 ```text
 bots/
 │
-├── practice/
+├── base_template_bot/
+├── practice_bots/
 ├── experimental/
 └── final/
 
@@ -84,32 +86,6 @@ requirements.txt
 README.md
 ```
 
----
-
-## Development Roadmap
-
-### Phase 1
-
-- [x] Repository setup
-- [x] Baseline bots implementation
-- [ ] Tournament benchmarking
-
-### Phase 2
-
-- [ ] Monte Carlo simulations
-- [ ] Strategy optimisation
-
-### Phase 3
-
-- [ ] Counterfactual Regret Minimization
-- [ ] Reinforcement learning
-- [ ] Self-play improvements
-
-### Phase 4
-
-- [ ] Final tournament bot
-
----
 
 ## Running Bots
 
@@ -123,12 +99,6 @@ Run a sample bot:
 
 ```bash
 python bots/practice/random_bot.py
-```
-
-Run simulations:
-
-```bash
-python sandbox/simulate.py
 ```
 
 ---
@@ -154,7 +124,7 @@ This project aims to explore:
 - reinforcement learning
 - opponent modelling
 - large-scale self-play systems
-- AI applications in imperfect-information games
+
 
 ---
 
@@ -164,7 +134,6 @@ This project aims to explore:
 - transformer-based decision systems
 - real-time adaptation
 - distributed self-play training
-- tournament-scale evaluation
 
 ---
 
